@@ -1,27 +1,33 @@
 @echo off
-setlocal enableextensions enabledelayedexpansion
+setlocal enabledelayedexpansion
 
-echo Ativando ambiente virtual...
-call venv\Scripts\activate
+REM --- MUDA PARA A PASTA DO SCRIPT ---
+cd /d %~dp0
 
-echo Criando arquivo de log com data segura...
+REM --- CAMINHO ABSOLUTO DO PYTHON DO VENV ---
+set PYTHON_EXE=%~dp0venv\Scripts\python.exe
 
-rem converte data local para YYYY-MM-DD (compatível com agendador)
-for /f "tokens=1-3 delims=/" %%a in ("%date%") do (
-    set yyyy=%%c
-    set mm=%%b
-    set dd=%%a
+REM --- GARANTE QUE O PYTHON EXISTE ---
+if not exist "!PYTHON_EXE!" (
+    echo ERRO: Python do venv não encontrado: !PYTHON_EXE!
+    pause
+    exit /b 1
 )
 
-set SAFE_DATE=%yyyy%-%mm%-%dd%
+REM --- GERA DATA SEGURA ---
+for /f "tokens=1-3 delims=/- " %%a in ("%date%") do (
+    set dd=%%a
+    set mm=%%b
+    set yyyy=%%c
+)
 
-echo === LOG INICIADO EM %SAFE_DATE% %time% === > app.log
+set SAFE_DATE=!yyyy!-!mm!-!dd!
+
+echo === LOG INICIADO EM !SAFE_DATE! %time% === > app.log
 echo. >> app.log
 
 echo Executando main.py...
-python main.py >> app.log 2>&1
+"!PYTHON_EXE!" main.py >> app.log 2>&1
 
-echo.
-echo Finalizado! O arquivo app.log foi criado/atualizado.
-
+echo Finalizado!
 endlocal
