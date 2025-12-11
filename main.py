@@ -24,7 +24,7 @@ def limpar_texto(valor):
 
 
 def main():
-    print(">>> Iniciando Migração com POLARS (Multi-Origem com Chave Única)")
+    print(">>> Iniciando Migracao com POLARS (Multi-Origem com Chave Unica)")
 
     # Conectar ao MariaDB
     try:
