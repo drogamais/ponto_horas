@@ -1,9 +1,10 @@
 import sys
 sys.stdout.reconfigure(encoding='utf-8', errors='replace')
 
+from pathlib import Path
 import polars as pl
 import pyodbc
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text, inspect as sa_inspect
 from config import (
     FB_CAMINHOS, FONTE_MAP, get_firebird_conn_str, get_mariadb_uri,
     TABELAS_ALVO
@@ -108,6 +109,8 @@ def main():
         "AFASTAMENTO": "24"
     }
 
+    tabelas_gravadas: list[str] = []
+
     for tabela in TABELAS_ALVO:
         tabela_upper = tabela.upper()
         print(f"\n--- Processando Tabela: {tabela} ---")
@@ -202,22 +205,46 @@ def main():
 
         if not df.is_empty():
             df.write_database(
-                table_name=nome_final,
+                table_name=f"{nome_final}_stg",
                 connection=engine_dest,
                 if_table_exists="replace",
                 engine="sqlalchemy"
             )
-            print(f"Sucesso: {nome_final} gravada.")
+            tabelas_gravadas.append(nome_final)
+            print(f"Sucesso: {nome_final}_stg gravada.")
         else:
-            print(f"Aviso: {nome_final} vazia. Operacao cancelada para proteger o banco.")
+            print(f"Aviso: {nome_final} vazia. Staging ignorado para proteger o banco.")
 
-    print("\n>>> Iniciando captura AFD e enriquecimento de ponto...")
+    # --- AFD: captura e insere direto nas tabelas _stg (antes do swap) ---
+    print("\n>>> Capturando AFD e enriquecendo staging...")
     try:
-        capturar_afd()
+        capturar_afd(
+            tab_ponto="fat_atec_ponto_diario_stg",
+            tab_func="dim_atec_funcionarios_stg",
+        )
     except Exception as e:
         print(f"[AVISO] Captura AFD falhou: {e}")
 
-    from pathlib import Path
+    # --- Swap: _stg -> live, live -> _old, drop _old ---
+    if tabelas_gravadas:
+        print("\n>>> Realizando swap das tabelas staging -> producao...")
+        existing = set(sa_inspect(engine_dest).get_table_names())
+        with engine_dest.connect() as conn:
+            for nome_final in tabelas_gravadas:
+                stg = f"{nome_final}_stg"
+                old = f"{nome_final}_old"
+                conn.execute(text(f"DROP TABLE IF EXISTS `{old}`"))
+                if nome_final in existing:
+                    conn.execute(text(
+                        f"RENAME TABLE `{nome_final}` TO `{old}`, `{stg}` TO `{nome_final}`"
+                    ))
+                    conn.execute(text(f"DROP TABLE IF EXISTS `{old}`"))
+                else:
+                    conn.execute(text(f"RENAME TABLE `{stg}` TO `{nome_final}`"))
+                print(f"  {stg} -> {nome_final}")
+            conn.commit()
+
+    # --- Limpeza dos .txt baixados ---
     pasta_afd = Path("base_equipamento")
     removidos = 0
     for txt in pasta_afd.glob("*.txt"):

@@ -210,7 +210,7 @@ def capturar_henry(url: str) -> Path | None:
 # Orquestração
 # ---------------------------------------------------------------------------
 
-def capturar() -> None:
+def capturar(tab_ponto: str | None = None, tab_func: str | None = None) -> None:
     ts = datetime.now().strftime("%H:%M:%S")
     total = len(CID_DEVICES) + len(HENRY_DEVICES)
     print(f"[{ts}] Capturando {total} dispositivo(s)...")
@@ -229,9 +229,10 @@ def capturar() -> None:
         print("  Nenhum dispositivo respondeu. Enriquecimento cancelado.")
         return
 
-    print("  Enriquecendo fat_atec_ponto_diario...")
+    destino = tab_ponto or "fat_atec_ponto_diario"
+    print(f"  Enriquecendo {destino}...")
     try:
-        enriquecer()
+        enriquecer(tab_ponto=tab_ponto, tab_func=tab_func)
     except Exception as e:
         print(f"  [AVISO] Enriquecimento falhou: {e}")
 

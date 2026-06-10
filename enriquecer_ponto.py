@@ -113,7 +113,14 @@ def pivotar_batidas(df: pl.DataFrame) -> pl.DataFrame:
     return pl.DataFrame(linhas, schema=schema)
 
 
-def enriquecer(caminho_afd: Path | None = None) -> None:
+def enriquecer(
+    caminho_afd: Path | None = None,
+    tab_ponto: str | None = None,
+    tab_func: str | None = None,
+) -> None:
+    _tab_ponto = tab_ponto or TAB_PONTO
+    _tab_func  = tab_func  or TAB_FUNC
+
     if caminho_afd is not None:
         arquivos = [caminho_afd]
     else:
@@ -145,13 +152,13 @@ def enriquecer(caminho_afd: Path | None = None) -> None:
         )
 
     df_por_cpf = pl.read_database(
-        f"SELECT CPF AS ID_AFD, CODIGO, ID_FONTE, CHAVE_FUNC_UNICA FROM {TAB_FUNC} "
+        f"SELECT CPF AS ID_AFD, CODIGO, ID_FONTE, CHAVE_FUNC_UNICA FROM {_tab_func} "
         f"WHERE CPF IS NOT NULL AND CPF <> '' AND SITUACAO = 'ATIVO'",
         connection=engine,
     ).with_columns(_normalizar("ID_AFD").alias("ID_AFD")).rename({"CODIGO": "IDENT"})
 
     df_por_pis = pl.read_database(
-        f"SELECT PIS AS ID_AFD, CODIGO, ID_FONTE, CHAVE_FUNC_UNICA FROM {TAB_FUNC} "
+        f"SELECT PIS AS ID_AFD, CODIGO, ID_FONTE, CHAVE_FUNC_UNICA FROM {_tab_func} "
         f"WHERE PIS IS NOT NULL AND PIS <> '' AND SITUACAO = 'ATIVO'",
         connection=engine,
     ).with_columns(_normalizar("ID_AFD").alias("ID_AFD")).rename({"CODIGO": "IDENT"})
@@ -192,7 +199,7 @@ def enriquecer(caminho_afd: Path | None = None) -> None:
     # 4. Garante coluna FONTE_HORARIO na tabela destino
     with engine.connect() as conn:
         conn.execute(text(
-            f"ALTER TABLE `{TAB_PONTO}` "
+            f"ALTER TABLE `{_tab_ponto}` "
             f"ADD COLUMN IF NOT EXISTS `FONTE_HORARIO` VARCHAR(20) NULL"
         ))
         conn.commit()
@@ -218,7 +225,7 @@ def enriquecer(caminho_afd: Path | None = None) -> None:
     set_partes.append("f.`FONTE_HORARIO` = 'AFD'")
 
     sql_update = f"""
-        UPDATE `{TAB_PONTO}` f
+        UPDATE `{_tab_ponto}` f
         JOIN `{TAB_TMP}` a
           ON  a.CHAVE_FUNC_UNICA = f.CHAVE_FUNC_UNICA
           AND a.DATA_BATIDA      = f.DATA_BATIDA
@@ -245,7 +252,7 @@ def enriquecer(caminho_afd: Path | None = None) -> None:
     cols_data_names  = ", ".join(f"`DATA_{c}`"  for c in pares_presentes)
 
     sql_insert = f"""
-        INSERT INTO `{TAB_PONTO}`
+        INSERT INTO `{_tab_ponto}`
           (`IDENT`, `DATA_BATIDA`, `ID_FONTE`, `CHAVE_FUNC_UNICA`, `FONTE_HORARIO`,
            {cols_pares_names},
            {cols_data_names},
@@ -260,7 +267,7 @@ def enriquecer(caminho_afd: Path | None = None) -> None:
           {colunas_data_insert},
           {fuso_partes_insert}
         FROM `{TAB_TMP}` a
-        LEFT JOIN `{TAB_PONTO}` p
+        LEFT JOIN `{_tab_ponto}` p
           ON  p.`CHAVE_FUNC_UNICA` = a.`CHAVE_FUNC_UNICA`
           AND p.`DATA_BATIDA`      = a.`DATA_BATIDA`
         WHERE p.`CHAVE_FUNC_UNICA` IS NULL
