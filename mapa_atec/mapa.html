@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Mapa AtecSoft Ponto - RH</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #1e1e2e;
+      color: #cdd6f4;
+      font-family: 'Segoe UI', sans-serif;
+      padding: 24px;
+    }
+    h1 {
+      text-align: center;
+      color: #89b4fa;
+      margin-bottom: 8px;
+      font-size: 1.4rem;
+      letter-spacing: .05em;
+    }
+    p.sub {
+      text-align: center;
+      color: #6c7086;
+      font-size: .85rem;
+      margin-bottom: 24px;
+    }
+    .mermaid {
+      background: #181825;
+      border: 1px solid #313244;
+      border-radius: 10px;
+      padding: 32px;
+      overflow: auto;
+    }
+  </style>
+</head>
+<body>
+  <h1>Mapa de Tabelas — AtecSoft Ponto Eletrônico</h1>
+  <p class="sub">Gerado automaticamente a partir do schema MariaDB (dbDrogamaisRH)</p>
+  <div class="mermaid">
+erDiagram
+    fb_bh {
+        int CODIGO
+        int ID_FUNC FK
+        date DATAINI
+        date DATAFIM
+        string SALDO
+        string AJUSTE
+        string EXTRA
+        string FALTA
+        string SALDO_NEG
+        string SALDO_ACUM
+        string OBS
+        int ID_FONTE
+    }
+    fb_cp {
+        int CODIGO
+        string E1
+        string E2
+        string E3
+        string E4
+        string E5
+        string S1
+        string S2
+        string S3
+        string S4
+        string S5
+        string ME1
+        string ME2
+        string ME3
+        string ME4
+        string ME5
+        string MS1
+        string MS2
+        string MS3
+        string MS4
+        string MS5
+        int TIPO_CALCULO
+        date DATA_BATIDA
+        int IDENT FK
+        int REF_E1
+        int REF_S1
+        int REF_E2
+        int REF_S2
+        int REF_E3
+        int REF_S3
+        int REF_E4
+        int REF_S4
+        int REF_E5
+        int REF_S5
+        string OBS_E1
+        string OBS_S1
+        string OBS_E2
+        string OBS_S2
+        string OBS_E3
+        string OBS_S3
+        string OBS_E4
+        string OBS_S4
+        string OBS_E5
+        string OBS_S5
+        string TOL_FALTA
+        string TOL_EXTRA
+        int JE1
+        int JS1
+        int JE2
+        int JS2
+        int JE3
+        int JS3
+        int JE4
+        int JS4
+        int JE5
+        int JS5
+        string ABONO
+        int NEUTRO
+        string AJUSTE
+        string FECHA
+        int EQUIP_E1
+        int EQUIP_S1
+        int EQUIP_E2
+        int EQUIP_S2
+        int EQUIP_E3
+        int EQUIP_S3
+        int EQUIP_E4
+        int EQUIP_S4
+        int EQUIP_E5
+        int EQUIP_S5
+        string ABONO_NEG
+        int HORARIO
+        int COD_EXTRA
+        int FER_EXTRA
+        int NBH
+        int FOLGA
+        int FALTA_SBH
+        int EXTRA
+        date DATA_E1
+        date DATA_S1
+        date DATA_E2
+        date DATA_S2
+        date DATA_E3
+        date DATA_S3
+        date DATA_E4
+        date DATA_S4
+        date DATA_E5
+        date DATA_S5
+        string E6
+        string S6
+        string ME6
+        string MS6
+        int REF_E6
+        int REF_S6
+        string OBS_E6
+        string OBS_S6
+        int JE6
+        int JS6
+        int EQUIP_E6
+        int EQUIP_S6
+        date DATA_E6
+        date DATA_S6
+        int JUST_ABN
+        string FUSO_E1
+        string FUSO_S1
+        string FUSO_E2
+        string FUSO_S2
+        string FUSO_E3
+        string FUSO_S3
+        string FUSO_E4
+        string FUSO_S4
+        string FUSO_E5
+        string FUSO_S5
+        string FUSO_E6
+        string FUSO_S6
+        int ID_FONTE
+    }
+    fb_cp_t {
+        int CODIGO
+        string E1
+        string E2
+        string E3
+        string E4
+        string E5
+        string S1
+        string S2
+        string S3
+        string S4
+        string S5
+        date DATA_BATIDA
+        int IDENT FK
+        string OBS_E1
+        string OBS_S1
+        string OBS_E2
+        string OBS_S2
+        string OBS_E3
+        string OBS_S3
+        string OBS_E4
+        string OBS_S4
+        string OBS_E5
+        string OBS_S5
+        int EQUIP_E1
+        int EQUIP_S1
+        int EQUIP_E2
+        int EQUIP_S2
+        int EQUIP_E3
+        int EQUIP_S3
+        int EQUIP_E4
+        int EQUIP_S4
+        int EQUIP_E5
+        int EQUIP_S5
+        date DATA_E1
+        date DATA_S1
+        date DATA_E2
+        date DATA_S2
+        date DATA_E3
+        date DATA_S3
+        date DATA_E4
+        date DATA_S4
+        date DATA_E5
+        date DATA_S5
+        string E6
+        string S6
+        string OBS_E6
+        string OBS_S6
+        int EQUIP_E6
+        int EQUIP_S6
+        date DATA_E6
+        date DATA_S6
+        int REF_E1
+        int REF_S1
+        int REF_E2
+        int REF_S2
+        int REF_E3
+        int REF_S3
+        int REF_E4
+        int REF_S4
+        int REF_E5
+        int REF_S5
+        int REF_E6
+        int REF_S6
+        string GEO_E1
+        string GEO_S1
+        string GEO_E2
+        string GEO_S2
+        string GEO_E3
+        string GEO_S3
+        string GEO_E4
+        string GEO_S4
+        string GEO_E5
+        string GEO_S5
+        string GEO_E6
+        string GEO_S6
+        string FUSO_E1
+        string FUSO_S1
+        string FUSO_E2
+        string FUSO_S2
+        string FUSO_E3
+        string FUSO_S3
+        string FUSO_E4
+        string FUSO_S4
+        string FUSO_E5
+        string FUSO_S5
+        string FUSO_E6
+        string FUSO_S6
+        int ID_FONTE
+    }
+    fb_departamento {
+        int CODIGO PK
+        string NOME
+        string RESP
+        string CARGO
+        int ID_FONTE
+    }
+    fb_empresa {
+        int CODIGO PK
+        string RAZAO
+        string FANTASIA
+        string IE
+        string CLASSIF
+        string ENDE
+        string BAIRRO
+        string COMPLE
+        string CEP
+        string CIDADE
+        string UF
+        string FONE
+        string EMAIL
+        string NATUREZA
+        string CPF
+        string CNPJ
+        string OBS
+        int IDENT
+        string CEI
+        string CHAVE
+        string CHAVE_2
+        string RESP
+        string CARGO
+        string COD_INT
+        string IDENT2
+        string FOTO
+        string REVENDA
+        int ID_FONTE
+    }
+    fb_feriado {
+        int CODIGO PK
+        string NOME
+        date DATA
+        int NBH
+        int VINC_CIDADE
+        int VINC_DEPART
+        int VINC_EMP
+        int ID_FONTE
+    }
+    fb_funcao {
+        int CODIGO PK
+        string NOME
+        int ID_FONTE
+    }
+    fb_funcionario {
+        int CODIGO PK
+        string NOME
+        string MATRICULA
+        string CRACHA
+        string PIS
+        int MESTRE
+        int BIO
+        int EMPRESA FK
+        int HORARIO
+        int DEPARTAMENTO FK
+        int FUNCAO FK
+        string RG
+        string CPF
+        string CTPS
+        string SITUACAO
+        date DATA_NASC
+        date DATA_DESLIG
+        date DATA_ADM
+        string OBS
+        string ENDE
+        string BAIRRO
+        string COMPLE
+        string CIDADE
+        string UF
+        string FONE
+        string FONE2
+        string CELULAR
+        string EMAIL
+        string CEP
+        int HAB_ESCALA
+        int ID_ESCALA
+        int SENHA
+        string FOTO
+        int MONITOR
+        int HAB_MONITOR
+        int GRUPO FK
+        int HORARIO_2
+        string CAMPO1
+        string CAMPO2
+        int CAMPO3
+        int HAB_SENHA_APP
+        string SENHA_APP
+        int ID_FONTE
+    }
+    fb_grupo {
+        int CODIGO PK
+        string NOME
+        int ID_FONTE
+    }
+    fb_just_bat {
+        int CODIGO
+        string NOME
+        int ID_FONTE
+    }
+    fb_justficativa {
+        int CODIGO PK
+        string NOME
+        int NORMAL
+        int FALTA
+        int REL_OC
+        int REL_AB
+        int REL_EXT
+        int FALTASBH
+        int FALTASFH
+        int ADNOT
+        int NDSR
+        int ABJ1
+        int ABJ2
+        int ABJ3
+        int ABJ4
+        int ABJ5
+        int JUST_AJ
+        int ID_FONTE
+    }
+    fb_log {
+        int CODIGO
+        string LOGIN
+        date DATA
+        string HORA
+        string TABELA
+        string OBS
+        int ID_FONTE
+    }
+    fb_nsr {
+        int CODIGO
+        date DATA_COLETA
+        string HORA_COLETA
+        date DATA_BATIDA
+        string HORA_BATIDA
+        int NSR
+        int QUANT_BATIDA
+        int EQUIP
+        int ID_FONTE
+    }
+    fb_obs_cp {
+        int CODIGO
+        string OBS
+        date DATA
+        int ID_FUNC
+        float VL_UNIT
+        float VL_TOT
+        int QTD
+        int HAB_EV
+        int ID_FONTE
+    }
+    fb_usuario {
+        int CODIGO PK
+        string NOME
+        string SENHA
+        int EMPRESA
+        int FUNC
+        int HORARIO
+        int DEP
+        int FUNCAO
+        int DSR
+        int FERIADO
+        int USUARIO
+        int EXTRAS
+        int ESCALA
+        int JUSTIF
+        int EXP
+        int ENVIAR
+        int REVEBER
+        int REC_AFD
+        int PD
+        int CP
+        int CALC
+        int ARQ_FISC
+        int EQUIP
+        int BACKUP
+        int CONEXAO
+        int SITU_FUNC
+        int INC_EXC_BAT
+        int AFAST
+        int CONFIG
+        int CONFIG_EXTRAS
+        int ESPELHO
+        int CIDADE
+        int CALC_HR
+        int COM_AGEND
+        int GRUPO
+        int VINC_EMP
+        int VINC_DEP
+        int VINC_GRP
+        int LOG
+        int LAY_IMP
+        int PERM_JUST
+        int PERM_MV_BAT
+        int PERM_BH
+        int PERM_OBS
+        string CPF
+        int ID_FONTE
+    }
+
+    fb_cp }o--|| fb_funcionario : "ident"
+    fb_cp_t }o--|| fb_funcionario : "ident"
+    fb_bh }o--|| fb_funcionario : "id_func"
+    fb_funcionario }o--|| fb_empresa : "empresa"
+    fb_funcionario }o--|| fb_departamento : "departamento"
+    fb_funcionario }o--|| fb_funcao : "funcao"
+    fb_funcionario }o--|| fb_grupo : "grupo"
+  </div>
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'dark',
+      er: { diagramPadding: 30, layoutDirection: 'TB', minEntityWidth: 100, entityPadding: 15 }
+    });
+  </script>
+</body>
+</html>

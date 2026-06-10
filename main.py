@@ -1,3 +1,6 @@
+import sys
+sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+
 import polars as pl
 import pyodbc
 from sqlalchemy import create_engine
@@ -5,6 +8,7 @@ from config import (
     FB_CAMINHOS, FONTE_MAP, get_firebird_conn_str, get_mariadb_uri,
     TABELAS_ALVO
 )
+from capturar_afd import capturar as capturar_afd
 
 def limpar_texto(valor):
     if valor is None:
@@ -206,6 +210,24 @@ def main():
             print(f"Sucesso: {nome_final} gravada.")
         else:
             print(f"Aviso: {nome_final} vazia. Operacao cancelada para proteger o banco.")
+
+    print("\n>>> Iniciando captura AFD e enriquecimento de ponto...")
+    try:
+        capturar_afd()
+    except Exception as e:
+        print(f"[AVISO] Captura AFD falhou: {e}")
+
+    from pathlib import Path
+    pasta_afd = Path("base_equipamento")
+    removidos = 0
+    for txt in pasta_afd.glob("*.txt"):
+        try:
+            txt.unlink()
+            removidos += 1
+        except Exception as e:
+            print(f"[AVISO] Nao foi possivel remover {txt.name}: {e}")
+    if removidos:
+        print(f"\n>>> {removidos} arquivo(s) AFD removido(s) de base_equipamento/")
 
 if __name__ == "__main__":
     main()
