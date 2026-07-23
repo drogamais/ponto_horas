@@ -212,15 +212,20 @@ def enriquecer(
         engine="sqlalchemy",
     )
 
-    # 6. UPDATE JOIN: atualiza E1..S6 e DATA_E1..DATA_S6 onde AFD tem valor
+    # 6. UPDATE JOIN: PREENCHE E1..S6 e DATA_E1..DATA_S6 só onde a coluna de destino ainda
+    #    está vazia (COALESCE) — nunca sobrescreve um valor já existente. Sem isso, como este
+    #    script reprocessa uma janela de JANELA_DIAS a cada execução (inclusive em --watch),
+    #    uma correção manual feita na AtecSoft dentro dessa janela seria revertida de volta pro
+    #    valor cru do AFD na rodada seguinte. Mesma estratégia de backend/src/ponto/lib/atec.js
+    #    (agente ATEC do RH), que já faz isso certo.
     set_partes = []
     for col in pares_presentes:
         set_partes.append(
-            f"f.`{col}` = IF(a.`{col}` IS NOT NULL, TIME(a.`{col}`), f.`{col}`)"
+            f"f.`{col}` = COALESCE(f.`{col}`, TIME(a.`{col}`))"
         )
         data_col = f"DATA_{col}"
         set_partes.append(
-            f"f.`{data_col}` = IF(a.`{col}` IS NOT NULL, f.`DATA_BATIDA`, f.`{data_col}`)"
+            f"f.`{data_col}` = COALESCE(f.`{data_col}`, IF(a.`{col}` IS NOT NULL, f.`DATA_BATIDA`, NULL))"
         )
     set_partes.append("f.`FONTE_HORARIO` = 'AFD'")
 
