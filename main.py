@@ -11,6 +11,19 @@ from config import (
 )
 from capturar_afd import capturar as capturar_afd
 
+# Índices a recriar depois do swap (RENAME TABLE troca o objeto inteiro, então qualquer
+# índice na tabela antiga se perde). Consumido pelo app RH para acelerar consultas por
+# DATA_BATIDA (ex.: "quem está de férias hoje") e o JOIN por CODIGO+ID_FONTE.
+INDICES_POS_SWAP = {
+    "fat_atec_ponto_diario": {
+        # CHAVE_FUNC_UNICA é TEXT (não VARCHAR) -> precisa de prefixo de tamanho pra indexar.
+        "idx_ponto_data_chave": ("DATA_BATIDA, CHAVE_FUNC_UNICA(50)", "normal"),
+    },
+    "dim_atec_justificativa": {
+        "idx_justificativa_codigo_fonte": ("CODIGO, ID_FONTE", "normal"),
+    },
+}
+
 def limpar_texto(valor):
     if valor is None:
         return None
@@ -242,6 +255,18 @@ def main():
                 else:
                     conn.execute(text(f"RENAME TABLE `{stg}` TO `{nome_final}`"))
                 print(f"  {stg} -> {nome_final}")
+
+                # O RENAME troca o objeto da tabela inteiro -> qualquer índice criado
+                # manualmente na tabela antiga é perdido. Recria aqui pra sobreviver ao swap.
+                for idx_nome, (colunas, tipo) in INDICES_POS_SWAP.get(nome_final, {}).items():
+                    try:
+                        if tipo == "fulltext":
+                            conn.execute(text(f"CREATE FULLTEXT INDEX `{idx_nome}` ON `{nome_final}` ({colunas})"))
+                        else:
+                            conn.execute(text(f"CREATE INDEX `{idx_nome}` ON `{nome_final}` ({colunas})"))
+                        print(f"    índice {idx_nome} recriado em {nome_final}")
+                    except Exception as e:
+                        print(f"    [AVISO] falha ao recriar índice {idx_nome} em {nome_final}: {e}")
             conn.commit()
 
     # --- Limpeza dos .txt baixados ---
