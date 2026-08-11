@@ -1,4 +1,5 @@
 SQLAlchemy==2.0.45
+certifi==2026.5.20
 charset-normalizer==3.4.7
 firebird-driver==2.0.2
 greenlet==3.3.0
@@ -18,4 +19,3 @@ six==1.17.0
 typing_extensions==4.15.0
 tzdata==2025.2
 urllib3==2.7.0
-﻿certifi==2026.5.20
