@@ -281,32 +281,65 @@ def limpar_texto(v):
     return v
 
 
+def _tipo_polars(tipo_py):
+    """Traduz o tipo que o cursor do Firebird informa para o tipo do polars.
+
+    Sem isso o polars infere pela primeira linha e estoura na seguinte
+    ("could not append value: 16:19:00 of type: time"). E gravar tudo como texto
+    tambem nao serve: as colunas chegam no MariaDB como TEXT e o app do RH
+    quebra — o espelho de ponto usa WEEKDAY(DATA_BATIDA) e TIMESTAMPDIFF, que
+    precisam de DATE/TIME de verdade.
+    """
+    import datetime
+    import decimal
+
+    return {
+        datetime.datetime: pl.Datetime,
+        datetime.date: pl.Date,
+        datetime.time: pl.Time,
+        decimal.Decimal: pl.Float64,
+        int: pl.Int64,
+        float: pl.Float64,
+        bool: pl.Boolean,
+        str: pl.String,
+        bytes: pl.String,  # decodificamos em limpar_texto()
+    }.get(tipo_py, pl.String)
+
+
 def ler_tabela(con, tabela: str, id_fonte: int) -> pl.DataFrame | None:
     """Lê a tabela inteira e devolve DataFrame já com o ID_FONTE.
 
-    Duas decisões que vêm de erro real observado:
+    Não usamos pl.read_database: com charset=NONE o driver entrega texto como
+    `bytes` e o polars recusa montar o DataFrame ("value ... of type binary").
+    O pyodbc convertia sozinho; o firebird-driver não.
 
-    1. Não usamos pl.read_database: com charset=NONE o driver entrega texto como
-       `bytes` e o polars recusa montar o DataFrame ("value ... of type binary").
-       O pyodbc convertia sozinho; o firebird-driver não.
-
-    2. Todas as colunas viram String e o MariaDB tipa no destino. Sem isso o
-       polars infere pela primeira linha e estoura na seguinte
-       ("could not append value: 16:19:00 of type: time"). A bronze é espelho
-       cru, então texto basta — e evita depender do mapa de tipos do Firebird 1.x.
+    Os tipos vêm do próprio cursor (ver _tipo_polars) para chegarem no MariaDB
+    como DATE/TIME/INT de verdade — o app do RH depende disso.
     """
     try:
         cur = con.cursor()
         cur.execute(f'SELECT * FROM "{tabela}"')
         colunas = [d[0] for d in cur.description]
+        esquema = {d[0]: _tipo_polars(d[1]) for d in cur.description}
+
         linhas = [
-            [None if v is None else (limpar_texto(v) if isinstance(v, bytes) else str(v))
-             for v in linha]
+            [limpar_texto(v) if isinstance(v, bytes) else v for v in linha]
             for linha in cur.fetchall()
         ]
         if not linhas:
             return None
-        df = pl.DataFrame(linhas, schema={c: pl.String for c in colunas}, orient="row")
+
+        try:
+            df = pl.DataFrame(linhas, schema=esquema, orient="row")
+        except Exception:
+            # Coluna com tipo misto (acontece em base antiga): cai pra texto só
+            # nessa tabela, em vez de perder a tabela inteira.
+            df = pl.DataFrame(
+                [[None if v is None else str(v) for v in linha] for linha in linhas],
+                schema={c: pl.String for c in colunas}, orient="row",
+            )
+            print(f"    [AVISO] {tabela}: tipo misto, gravando como texto")
+
         return df.with_columns(pl.lit(id_fonte).alias("ID_FONTE").cast(pl.Int8))
     except Exception as e:
         print(f"    [ERRO] fonte {id_fonte} / {tabela}: {str(e)[:150]}")
@@ -541,15 +574,19 @@ def parsear_batidas(conteudos: list[bytes]) -> pl.DataFrame:
 
 
 def pivotar(df: pl.DataFrame) -> pl.DataFrame:
-    """Agrupa (identificador, dia), ordena as horas e distribui em E1->S1->...->S6."""
+    """Agrupa (identificador, dia), ordena as horas e distribui em E1->S1->...->S6.
+
+    As horas saem como pl.Time (nao string): assim a tabela auxiliar nasce com
+    coluna TIME no MariaDB e o UPDATE nao depende de conversao implicita.
+    """
     linhas = []
     for (ident, data), grupo in df.sort("HORA").group_by(["IDENT_AFD", "DATA"]):
         row = {"IDENT_AFD": ident, "DATA": data}
         for i, h in enumerate(grupo["HORA"].to_list()[:len(PARES)]):
-            row[PARES[i]] = f"{h.hour:02d}:{h.minute:02d}:{h.second:02d}"
+            row[PARES[i]] = h
         linhas.append(row)
     esquema = {"IDENT_AFD": pl.String, "DATA": pl.Date}
-    esquema.update({c: pl.String for c in PARES})
+    esquema.update({c: pl.Time for c in PARES})
     return pl.DataFrame(linhas, schema=esquema)
 
 
