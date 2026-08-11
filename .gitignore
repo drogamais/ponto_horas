@@ -2,3 +2,6 @@
 venv
 __pycache__
 app.log
+# temporarios do ponto_horas (bases restauradas e .FBK copiados)
+_trabalho/
+logs/

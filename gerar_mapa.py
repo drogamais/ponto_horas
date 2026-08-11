@@ -4,8 +4,20 @@ Lê o schema das tabelas fb_* no MariaDB e gera:
   mapa_atec/mapa.html — HTML com Mermaid.js para abrir no browser
 """
 import os
+from pathlib import Path
+from urllib.parse import quote_plus
+
+from dotenv import load_dotenv
 from sqlalchemy import create_engine, text
-from config import get_mariadb_uri
+
+load_dotenv(Path(__file__).resolve().parent / ".env")
+
+
+def get_mariadb_uri() -> str:
+    """Conexao com o MariaDB (antes vinha do config.py, que foi consolidado)."""
+    senha = quote_plus(os.getenv("MARIA_PASS", ""))
+    return (f"mariadb+mariadbconnector://{os.getenv('MARIA_USER')}:{senha}"
+            f"@{os.getenv('MARIA_HOST')}:{os.getenv('MARIA_PORT')}/{os.getenv('MARIA_DB')}")
 
 PASTA = "mapa_atec"
 

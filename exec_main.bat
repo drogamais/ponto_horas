@@ -26,8 +26,8 @@ set SAFE_DATE=!yyyy!-!mm!-!dd!
 echo === LOG INICIADO EM !SAFE_DATE! %time% === > app.log
 echo. >> app.log
 
-echo Executando main.py...
-"!PYTHON_EXE!" main.py >> app.log 2>&1
+echo Executando ponto_horas.py...
+"!PYTHON_EXE!" ponto_horas.py >> app.log 2>&1
 
 echo Finalizado!
 endlocal
