@@ -568,9 +568,37 @@ def parsear_batidas(conteudos: list[bytes]) -> pl.DataFrame:
     esquema = {"IDENT_AFD": pl.String, "DATA": pl.Date, "HORA": pl.Time}
     if not registros:
         return pl.DataFrame(schema=esquema)
-    # dedup entre aparelhos: a mesma batida pode vir de mais de um relógio
-    return pl.DataFrame(registros, schema=esquema).unique(
+    df = pl.DataFrame(registros, schema=esquema).unique(
         subset=["IDENT_AFD", "DATA", "HORA"])
+
+    # Dedup por PROXIMIDADE: a mesma pessoa registrando uma vez pode gerar duas
+    # linhas com segundos de diferenca (aparelhos diferentes, relogios nao
+    # sincronizados). O unique() acima so pega hora identica, entao sobrava
+    # batida repetida — e cada repetida ocupava um slot E/S, deslocando o resto
+    # (foi o que produziu "S2 = E2" no espelho).
+    return _juntar_batidas_proximas(df)
+
+
+# Batidas a menos de N minutos uma da outra sao a MESMA marcacao.
+MINUTOS_DEDUP = int(os.getenv("MINUTOS_DEDUP", "2"))
+
+
+def _juntar_batidas_proximas(df: pl.DataFrame) -> pl.DataFrame:
+    """Descarta batidas muito proximas entre si (mesma pessoa, mesmo dia)."""
+    if df.is_empty():
+        return df
+    manter = []
+    for (ident, data), grupo in df.sort("HORA").group_by(["IDENT_AFD", "DATA"]):
+        ultima = None
+        for h in grupo["HORA"].to_list():
+            if ultima is not None:
+                delta = (h.hour * 60 + h.minute) - (ultima.hour * 60 + ultima.minute)
+                if delta < MINUTOS_DEDUP:
+                    continue  # mesma marcacao, vinda de outro aparelho
+            manter.append({"IDENT_AFD": ident, "DATA": data, "HORA": h})
+            ultima = h
+    esquema = {"IDENT_AFD": pl.String, "DATA": pl.Date, "HORA": pl.Time}
+    return pl.DataFrame(manter, schema=esquema) if manter else pl.DataFrame(schema=esquema)
 
 
 def pivotar(df: pl.DataFrame) -> pl.DataFrame:
@@ -667,10 +695,34 @@ def enriquecer_staging(engine) -> int:
             f"  JOIN `{aux}` s ON s.CHAVE_FUNC_UNICA = d.CHAVE_FUNC_UNICA "
             f"   AND s.DATA_BATIDA = d.DATA_BATIDA "
             f"   SET {sets}, d.FONTE_HORARIO = 'AFD'"))
+        atualizadas = r.rowcount
+
+        # INSERE os dias que so existem no AFD. O AtecSoft cria a linha do dia
+        # quando processa o ponto (as vezes so no dia seguinte, as vezes nunca
+        # pra quem tem cadastro irregular) — sem isso o ponto de hoje nao
+        # apareceria no espelho, mesmo com a batida no relogio.
+        colunas_ins = ", ".join(f"`{c}`" for c in presentes)
+        valores_ins = ", ".join(f"s.`{c}`" for c in presentes)
+        # CODIGO e a PK: negativo pra nunca colidir com o do Firebird (positivo).
+        r2 = conn.execute(text(
+            f"INSERT INTO `{stg_ponto}` "
+            f"  (CODIGO, IDENT, ID_FONTE, CHAVE_FUNC_UNICA, DATA_BATIDA, "
+            f"   FONTE_HORARIO, {colunas_ins}) "
+            f"SELECT -(ROW_NUMBER() OVER (ORDER BY s.CHAVE_FUNC_UNICA, s.DATA_BATIDA)) "
+            f"         - UNIX_TIMESTAMP() * 1000, "
+            f"       s.CODIGO, s.ID_FONTE, s.CHAVE_FUNC_UNICA, s.DATA_BATIDA, "
+            f"       'AFD', {valores_ins} "
+            f"  FROM `{aux}` s "
+            f"  LEFT JOIN `{stg_ponto}` d "
+            f"    ON d.CHAVE_FUNC_UNICA = s.CHAVE_FUNC_UNICA "
+            f"   AND d.DATA_BATIDA = s.DATA_BATIDA "
+            f" WHERE d.CHAVE_FUNC_UNICA IS NULL"))
+        inseridas = r2.rowcount
+
         conn.execute(text(f"DROP TABLE IF EXISTS `{aux}`"))
         conn.commit()
-    print(f"  staging enriquecida: {r.rowcount} linha(s)")
-    return r.rowcount
+    print(f"  staging enriquecida: {atualizadas} atualizada(s), {inseridas} inserida(s)")
+    return atualizadas + inseridas
 
 
 def trocar_tabelas(engine, tabelas: list[str]) -> None:
