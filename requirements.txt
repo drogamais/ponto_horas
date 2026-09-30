@@ -10,7 +10,7 @@ packaging==25.0
 pandas==2.3.3
 polars-runtime-32==1.36.1
 polars==1.36.1
-pyarrow==22.0.0
+pyarrow==23.0.1
 python-dateutil==2.9.0.post0
 python-dotenv==1.2.1
 pytz==2025.2
