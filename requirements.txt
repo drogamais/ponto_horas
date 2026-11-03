@@ -1,5 +1,5 @@
 SQLAlchemy==2.0.45
-certifi==2026.5.20
+certifi==2026.10.18
 charset-normalizer==3.4.7
 firebird-driver==2.0.2
 greenlet==3.3.0
